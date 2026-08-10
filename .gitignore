@@ -1,0 +1,75 @@
+# ==========================================
+# Unity Auto-Generated & Cache Folders
+# ==========================================
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+.utmp/
+
+# Keep asset metadata intact
+!/[Aa]ssets/**/*.meta
+
+# ==========================================
+# 3D Modeling & Source File Backups
+# ==========================================
+# Ignore Blender auto-save backup files (.blend1)
+*.blend1
+*.blend1.meta
+
+# ==========================================
+# IDEs & Editor Project Files
+# ==========================================
+# Visual Studio / Visual Studio Code / Rider
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.DotSettings.user
+[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Gradle cache (Android builds)
+.gradle/
+
+# ==========================================
+# Executables & Build Artifacts
+# ==========================================
+*.apk
+*.aab
+*.app
+*.unitypackage
+*.unitypackage.meta
+
+# Crash reports
+sysinfo.txt
+mono_crash.*
+crashlytics-build.properties
+
+# ==========================================
+# OS Generated Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
