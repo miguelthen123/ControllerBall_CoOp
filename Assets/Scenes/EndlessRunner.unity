@@ -4458,6 +4458,9 @@ MonoBehaviour:
   - prefab: {fileID: 1841697412533884994, guid: 03e8263e62f920d4e9f9ddc53bcbbe27, type: 3}
     spawnWeight: 10
     isSpecialTrack: 1
+  - prefab: {fileID: 7619578213957479162, guid: 1ac7bb6424b957449a329469c60bd6c2, type: 3}
+    spawnWeight: 5
+    isSpecialTrack: 1
   playerTransform: {fileID: 686660028}
   initialSpawnOffset: {x: 0, y: -1.5, z: 0}
   totalAheadSegments: 8
