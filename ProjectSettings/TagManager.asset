@@ -32,6 +32,7 @@ TagManager:
   - QDSUIToggleCheckboxRadio
   - QDSUIToggleThumbnail
   - Obstacle
+  - Wire
   layers:
   - Default
   - TransparentFX

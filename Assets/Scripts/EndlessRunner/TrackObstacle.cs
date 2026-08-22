@@ -107,7 +107,8 @@ public class TrackObstacle : MonoBehaviour
     {
         if (!hasObstacle || activeTransform == null) return;
 
-        if (OVRInput.IsControllerConnected(obstacleController))
+        if (OVRInput.IsControllerConnected(obstacleController) &&
+            OVRInput.GetControllerOrientationTracked(obstacleController))
         {
             CheckFrameToFrameGesture();
         }
@@ -201,6 +202,23 @@ public class TrackObstacle : MonoBehaviour
             trackMover.ResumeTrack();
             Debug.Log("<color=green>[TrackObstacle] Obstacle opened while waiting. Resuming track.</color>");
         }
+    }
+
+    /// <summary>
+    /// Forces this obstacle to close. Usually invoked by VRTrackMover on tracking loss.
+    /// </summary>
+    public void ForceCloseObstacle()
+    {
+        if (!hasObstacle) return;
+
+        isOpen = false;
+        targetAngleY = closeAngle;
+
+        // Reset gesture accumulation state
+        accumulatedRotation = 0f;
+        canTrigger = true;
+
+        Debug.LogWarning($"[TrackObstacle] {gameObject.name} forced CLOSED.");
     }
 
     private void SmoothRotateObstacle()

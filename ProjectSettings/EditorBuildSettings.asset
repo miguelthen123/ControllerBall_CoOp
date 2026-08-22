@@ -5,10 +5,17 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 0
+    path: Assets/Scenes/EndlessRunner.unity
+    guid: 2ea85363af844a745aacd212ba7c2997
+  - enabled: 1
+    path: Assets/Scenes/XRTryOut.unity
+    guid: dcba07b152ee44c4f91018b542fab8c7
   m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 07c18d026514ff048be724464dc931fd, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: e21be53b894f20b4faf69ae591ca7dba, type: 2}

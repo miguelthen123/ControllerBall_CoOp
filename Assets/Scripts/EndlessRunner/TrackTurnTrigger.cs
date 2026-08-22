@@ -13,8 +13,8 @@ public class TrackTurnTrigger : MonoBehaviour
     public JunctionType junctionType = JunctionType.TJunction;
 
     [Header("Custom Turn Angles (Degrees)")]
-    public float leftTurnAngle = -90f;
-    public float rightTurnAngle = 90f;
+    public float leftTurnAngle = 90f;
+    public float rightTurnAngle = -90f;
 
     [Header("Stop Settings")]
     public bool stopOnEnter = true;
@@ -60,11 +60,12 @@ public class TrackTurnTrigger : MonoBehaviour
         if (IsPlayer(other))
         {
             playerInside = true;
-            Debug.Log($"<color=yellow>[TurnTrigger] Player entered trigger on '{gameObject.name}'. Stopping track.</color>");
+            Debug.Log($"<color=yellow>[TurnTrigger] Player entered trigger on '{gameObject.name}'. Stopping track for junction.</color>");
 
             if (stopOnEnter && trackMover != null && !trackMover.IsInCooldown)
             {
-                trackMover.StopTrack();
+                // Explicitly stop track with StoppedAtJunction state
+                trackMover.StopTrack(VRTrackMover.StopReason.StoppedAtJunction);
             }
         }
     }
@@ -77,9 +78,10 @@ public class TrackTurnTrigger : MonoBehaviour
         {
             playerInside = true;
 
+            // Ensure the mover remains stopped at junction if moving without a handled turn
             if (stopOnEnter && trackMover != null && !trackMover.IsStopped && !trackMover.IsTurning && !trackMover.IsInCooldown)
             {
-                trackMover.StopTrack();
+                trackMover.StopTrack(VRTrackMover.StopReason.StoppedAtJunction);
             }
         }
     }
@@ -90,10 +92,10 @@ public class TrackTurnTrigger : MonoBehaviour
         {
             if (trackMover != null && trackMover.IsTurning) return;
 
-            // If the player somehow exits without turning, ensure we stop so they don't slide away
+            // If the player somehow exits without turning, stop them at junction
             if (!hasHandledTurn && trackMover != null && !trackMover.IsStopped && !trackMover.IsInCooldown)
             {
-                trackMover.StopTrack();
+                trackMover.StopTrack(VRTrackMover.StopReason.StoppedAtJunction);
             }
             playerInside = false;
         }
@@ -103,8 +105,10 @@ public class TrackTurnTrigger : MonoBehaviour
     {
         if (trackMover == null || hasHandledTurn) return;
 
-        // Process turn input if player is inside trigger OR if track is halted at this junction
-        if (playerInside || trackMover.IsStopped)
+        // Process turn input ONLY if player is inside trigger AND track is either running or stopped specifically at a junction
+        bool isAtJunction = playerInside && (trackMover.CurrentStopReason == VRTrackMover.StopReason.StoppedAtJunction || !trackMover.IsStopped);
+
+        if (isAtJunction)
         {
             int turnInput = trackMover.GetControllerTurnDirection();
 
