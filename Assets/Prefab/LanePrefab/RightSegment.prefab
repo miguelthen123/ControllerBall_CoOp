@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6759516082961215968}
   - component: {fileID: 3941370818676510411}
   - component: {fileID: 4551786904873122406}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: StraightSegment (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -123,7 +123,7 @@ GameObject:
   - component: {fileID: 785192029419014771}
   - component: {fileID: 6562194132014241851}
   - component: {fileID: 2101575514869770694}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RightSegment
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -198,7 +198,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4408311800306119363}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Exit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -229,7 +229,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5554721527242798999}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: CornerPivot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -261,7 +261,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7019190323063364862}
   - component: {fileID: 6823673085462681302}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Trackpoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -307,7 +307,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7731635044234572190}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Entry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -341,7 +341,7 @@ GameObject:
   - component: {fileID: 404727556086892068}
   - component: {fileID: 4916184493401595831}
   - component: {fileID: 110261362939322898}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: StraightSegment (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

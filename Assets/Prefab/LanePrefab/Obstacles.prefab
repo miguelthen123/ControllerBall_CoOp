@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9210590105740940672}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: rotationPivot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43,7 +43,7 @@ GameObject:
   - component: {fileID: 158467455743782208}
   - component: {fileID: 1379253575318981221}
   - component: {fileID: 9125214781282842231}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Obstacles
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -100,8 +100,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TrackObstacle
   obstacleController: 1
+  inputAxis: 2
+  frameRotationThreshold: 1
   turnRotationThreshold: 18
   yawSampleWindowSeconds: 0.25
+  resetThresholdDegrees: 5
   obstaclePart: {fileID: 5838656397607224337}
   rotationPivot: {fileID: 9210590105740940672}
   openAngle: -90
@@ -110,6 +113,7 @@ MonoBehaviour:
   obstacleSpawnChance: 50
   startClosedChance: 50
   trackMover: {fileID: 0}
+  debugInput: 1
 --- !u!1 &7790462810887590337
 GameObject:
   m_ObjectHideFlags: 0
@@ -122,7 +126,7 @@ GameObject:
   - component: {fileID: 2787412409732705116}
   - component: {fileID: 1537082812998504027}
   - component: {fileID: 7123454939313911626}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

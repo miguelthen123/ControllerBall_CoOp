@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2054538236068476740}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Entry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -41,7 +41,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4508270775485993999}
   - component: {fileID: 6426168491982900741}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TrackPoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -87,7 +87,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8069887567403785936}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Exit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -118,7 +118,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 158467455743782208}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: StraightSegment
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -157,7 +157,7 @@ GameObject:
   - component: {fileID: 1593214530216536943}
   - component: {fileID: 7596755818905499488}
   - component: {fileID: 591319517629402317}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: StraightSegment (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

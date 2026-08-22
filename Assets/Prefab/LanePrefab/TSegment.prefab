@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7218936377678148073}
   - component: {fileID: 5910579039242479497}
   - component: {fileID: 24066658016841829}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: StraightSegment (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -124,7 +124,7 @@ GameObject:
   - component: {fileID: 3470321790951868194}
   - component: {fileID: 7941209252572812367}
   - component: {fileID: 5948935271370707640}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: StraightSegment (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -236,7 +236,7 @@ GameObject:
   - component: {fileID: 398547662939919488}
   - component: {fileID: 8694496720881423361}
   - component: {fileID: 9130309838040909742}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: StraightSegment (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -345,7 +345,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4074358652802941660}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftExit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -377,7 +377,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1415321061859894426}
   - component: {fileID: 5372448847567144646}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TrackPoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -424,7 +424,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8194465760788264493}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: CornerPivot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -455,7 +455,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2209339562511567207}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RightExit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -488,7 +488,7 @@ GameObject:
   - component: {fileID: 2238831117385052841}
   - component: {fileID: 4028279741442354162}
   - component: {fileID: 6124132352526259238}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TSegment
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -565,7 +565,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 312705855762645186}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Entry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
