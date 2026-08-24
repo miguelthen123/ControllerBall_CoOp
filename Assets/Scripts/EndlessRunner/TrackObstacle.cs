@@ -14,6 +14,12 @@ public class TrackObstacle : MonoBehaviour
     public OVRInput.Controller obstacleController = OVRInput.Controller.LTouch;
     [SerializeField] private ControllerAxis inputAxis = ControllerAxis.Y_Yaw;
 
+    [Header("Haptic Settings")]
+    [Tooltip("The controller that will vibrate when waiting at an obstacle.")]
+    public OVRInput.Controller hapticController = OVRInput.Controller.LTouch;
+    [Range(0f, 1f)] public float hapticFrequency = 1f;
+    [Range(0f, 1f)] public float hapticAmplitude = 1f;
+
     [Header("Wrist Turn Controls")]
     [Tooltip("Minimum controller rotation between movement frames required to start accumulating a gesture.")]
     public float frameRotationThreshold = 1f;
@@ -114,6 +120,18 @@ public class TrackObstacle : MonoBehaviour
         }
 
         SmoothRotateObstacle();
+
+        // Keep haptics active continuously while waiting at the obstacle
+        if (playerIsWaiting)
+        {
+            OVRInput.SetControllerVibration(hapticFrequency, hapticAmplitude, hapticController);
+        }
+    }
+
+    private void OnDisable()
+    {
+        // Safety check to clear vibration if scene unloads or object is disabled
+        StopHaptics();
     }
 
     private void InitializeControllerInput()
@@ -199,6 +217,7 @@ public class TrackObstacle : MonoBehaviour
         if (isOpen && playerIsWaiting && trackMover != null)
         {
             playerIsWaiting = false;
+            StopHaptics(); // Stop vibration when player is released
             trackMover.ResumeTrack();
             Debug.Log("<color=green>[TrackObstacle] Obstacle opened while waiting. Resuming track.</color>");
         }
@@ -252,6 +271,26 @@ public class TrackObstacle : MonoBehaviour
             trackMover.StopTrack();
             Debug.LogWarning("<color=orange>[TrackObstacle] Player reached CLOSED obstacle. Stopping track!</color>");
         }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!hasObstacle) return;
+
+        bool isPlayer = other.CompareTag("Player") ||
+                        other.transform == trackMover.playerTransform ||
+                        (trackMover.playerTransform != null && other.transform.IsChildOf(trackMover.playerTransform));
+
+        if (isPlayer && playerIsWaiting)
+        {
+            playerIsWaiting = false;
+            StopHaptics();
+        }
+    }
+
+    private void StopHaptics()
+    {
+        OVRInput.SetControllerVibration(0f, 0f, hapticController);
     }
 
     private float ReadRawAngle(ControllerAxis axis)

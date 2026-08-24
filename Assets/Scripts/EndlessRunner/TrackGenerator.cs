@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,60 +27,50 @@ public class TrackGenerator : MonoBehaviour
     [Tooltip("Distance behind player before track is destroyed")]
     public float cleanupDistanceBehindPlayer = 25f; 
 
+    [Header("Game Timer & Restart Settings")]
+    [Tooltip("Duration of the game session in seconds.")]
+    public float gameDurationSeconds = 60f; 
+    [Tooltip("Delay in seconds before auto-restarting after Game Over.")]
+    public float restartDelaySeconds = 10f;
+
+    [Header("Game Status")]
+    public float TimeRemaining { get; private set; }
+    public int PassedTracksCount { get; private set; }
+    public bool IsGameOver { get; private set; } = false;
+    public float RestartCountdown { get; private set; } = 0f;
+
     private List<GameObject> activeTrackSegments = new List<GameObject>();
-    // FIX 3: Keep track of ALL open exits so branches generate properly
+    private HashSet<GameObject> passedTrackSegments = new HashSet<GameObject>();
     private List<Transform> openExits = new List<Transform>(); 
     
     private VRTrackMover trackMover;
     private int totalSpawnWeight;
     private bool lastSpawnedWasSpecial = false;
+    private Coroutine restartCoroutine;
 
     private void Start()
     {
-        if (playerTransform == null) return;
-
         trackMover = GetComponent<VRTrackMover>();
         CalculateTotalWeights();
-
-        Vector3 spawnOrigin = playerTransform.TransformPoint(initialSpawnOffset);
-        GameObject firstSegment = Instantiate(initialTrackPrefab, spawnOrigin, playerTransform.rotation, transform);
-        activeTrackSegments.Add(firstSegment);
-
-        TrackPoints trackData = firstSegment.GetComponentInChildren<TrackPoints>();
-        if (trackData != null && trackData.EntryPoint != null)
-        {
-            Vector3 entryOffset = spawnOrigin - trackData.EntryPoint.position;
-            firstSegment.transform.position += entryOffset;
-            
-            // Add initial exits
-            if (trackData.ExitPoints != null && trackData.ExitPoints.Length > 0)
-                openExits.AddRange(trackData.ExitPoints);
-            else
-                openExits.Add(firstSegment.transform);
-        }
-
-        for (int i = 0; i < totalAheadSegments - 1; i++)
-        {
-            SpawnNextSegment();
-        }
+        InitializeGame();
     }
 
     private void Update()
     {
+        if (IsGameOver) return;
+
+        UpdateGameTimer();
+
         if (playerTransform == null || openExits.Count == 0 || trackMover == null) return;
         if (trackMover.IsStopped) return;
 
-        // Check if ANY of our open branch exits are getting close to the player
+        CheckPassedSegments();
+
         bool needsSpawn = false;
         foreach (var exit in openExits)
         {
             if (exit != null)
             {
-                // CHANGE FROM THIS:
-                // float exitZDistance = playerTransform.InverseTransformPoint(exit.position).z;
-                // if (exitZDistance <= spawnTriggerDistance)
-
-                // TO THIS (3D distance regardless of turns/orientation):
                 float distanceToExit = Vector3.Distance(playerTransform.position, exit.position);
                 if (distanceToExit <= spawnTriggerDistance)
                 {
@@ -96,15 +87,115 @@ public class TrackGenerator : MonoBehaviour
         }
     }
 
+    private void InitializeGame()
+    {
+        // 1. Clear old track game objects if restarting
+        foreach (GameObject segment in activeTrackSegments)
+        {
+            if (segment != null) Destroy(segment);
+        }
+
+        // 2. Reset tracking lists & state values
+        activeTrackSegments.Clear();
+        passedTrackSegments.Clear();
+        openExits.Clear();
+
+        TimeRemaining = gameDurationSeconds;
+        PassedTracksCount = 0;
+        IsGameOver = false;
+        lastSpawnedWasSpecial = false;
+
+        if (playerTransform == null) return;
+
+        // 3. Spawn Initial Segment
+        Vector3 spawnOrigin = playerTransform.TransformPoint(initialSpawnOffset);
+        GameObject firstSegment = Instantiate(initialTrackPrefab, spawnOrigin, playerTransform.rotation, transform);
+        activeTrackSegments.Add(firstSegment);
+
+        TrackPoints trackData = firstSegment.GetComponentInChildren<TrackPoints>();
+        if (trackData != null && trackData.EntryPoint != null)
+        {
+            Vector3 entryOffset = spawnOrigin - trackData.EntryPoint.position;
+            firstSegment.transform.position += entryOffset;
+            
+            if (trackData.ExitPoints != null && trackData.ExitPoints.Length > 0)
+                openExits.AddRange(trackData.ExitPoints);
+            else
+                openExits.Add(firstSegment.transform);
+        }
+
+        // 4. Pre-spawn ahead tracks
+        for (int i = 0; i < totalAheadSegments - 1; i++)
+        {
+            SpawnNextSegment();
+        }
+    }
+
+    private void UpdateGameTimer()
+    {
+        if (TimeRemaining > 0f)
+        {
+            TimeRemaining -= Time.deltaTime;
+            if (TimeRemaining <= 0f)
+            {
+                TimeRemaining = 0f;
+                TriggerGameOver();
+            }
+        }
+    }
+
+    private void TriggerGameOver()
+    {
+        IsGameOver = true;
+        if (trackMover != null)
+        {
+            trackMover.StopTrack(); 
+        }
+
+        Debug.Log($"Time Up! Game Over. Total Tracks Passed: {PassedTracksCount}");
+
+        if (restartCoroutine != null) StopCoroutine(restartCoroutine);
+        restartCoroutine = StartCoroutine(RestartRoutine());
+    }
+
+    private IEnumerator RestartRoutine()
+    {
+        RestartCountdown = restartDelaySeconds;
+
+        while (RestartCountdown > 0f)
+        {
+            yield return null;
+            RestartCountdown -= Time.deltaTime;
+        }
+
+        RestartCountdown = 0f;
+        InitializeGame();
+
+        // Re-enable track movement if applicable
+        if (trackMover != null)
+        {
+            trackMover.ResumeTrack(); // Adjust to your VRTrackMover start/reset method name if needed
+        }
+    }
+
+    private void CheckPassedSegments()
+    {
+        foreach (GameObject segment in activeTrackSegments)
+        {
+            if (segment == null || passedTrackSegments.Contains(segment)) continue;
+
+            float zDistance = playerTransform.InverseTransformPoint(segment.transform.position).z;
+
+            if (zDistance < 0f)
+            {
+                passedTrackSegments.Add(segment);
+                PassedTracksCount++;
+            }
+        }
+    }
+
     private void SpawnNextSegment()
     {
-
-        Debug.Log($"Spawning triggered. Current open exits: {openExits.Count}");
-        if (openExits.Count == 0)
-        {
-            Debug.LogWarning("Generation stopped: openExits list is empty!");
-            return;
-        }
         if (openExits.Count == 0) return;
 
         List<Transform> newExits = new List<Transform>();
@@ -126,19 +217,15 @@ public class TrackGenerator : MonoBehaviour
                 continue;
             }
 
-            // UNIVERSAL ALIGNMENT: 
-            // 1. Calculate the rotation difference needed so EntryPoint rotation matches ExitPoint rotation exactly.
             Quaternion targetRotation = exitToAttachTo.rotation * Quaternion.Inverse(trackData.EntryPoint.rotation);
             newSegment.transform.rotation = targetRotation * newSegment.transform.rotation;
 
-            // 2. Calculate the position difference so EntryPoint position snaps to ExitPoint position exactly.
             Vector3 positionOffset = exitToAttachTo.position - trackData.EntryPoint.position;
             newSegment.transform.position += positionOffset;
 
             if (selectedItem.isSpecialTrack) spawnedSpecial = true;
             activeTrackSegments.Add(newSegment);
 
-            // Collect all new exit points for the next generation cycle
             if (trackData.ExitPoints != null && trackData.ExitPoints.Length > 0)
             {
                 newExits.AddRange(trackData.ExitPoints);
@@ -155,7 +242,6 @@ public class TrackGenerator : MonoBehaviour
 
     private void CleanupBehindSegments()
     {
-        // FIX 2: Iterate backwards and use distance-based cleanup!
         for (int i = activeTrackSegments.Count - 1; i >= 0; i--)
         {
             GameObject segment = activeTrackSegments[i];
@@ -165,13 +251,13 @@ public class TrackGenerator : MonoBehaviour
                 continue;
             }
 
-            // Calculate distance behind player on the Z axis
             float zDistance = playerTransform.InverseTransformPoint(segment.transform.position).z;
 
             if (zDistance < -cleanupDistanceBehindPlayer)
             {
+                passedTrackSegments.Remove(segment);
                 activeTrackSegments.RemoveAt(i);
-                Destroy(segment); // Now it actually destroys the GameObject!
+                Destroy(segment);
             }
         }
     }
@@ -205,13 +291,35 @@ public class TrackGenerator : MonoBehaviour
 
     private void OnGUI()
     {
-        if (trackMover == null) return;
         GUIStyle style = new GUIStyle();
         style.fontSize = 22;
         style.normal.textColor = Color.cyan;
-        GUILayout.BeginArea(new Rect(30, 30, 600, 200));
-        GUILayout.Label($"Status: {trackMover.LastDebugState}", style);
-        GUILayout.Label($"Wrist Twist: {trackMover.CurrentYawDelta:F1}° (Req: ±{trackMover.turnRotationThreshold}°)", style);
+
+        GUILayout.BeginArea(new Rect(30, 30, 600, 300));
+        
+        if (trackMover != null)
+        {
+            GUILayout.Label($"Status: {trackMover.LastDebugState}", style);
+            GUILayout.Label($"Wrist Twist: {trackMover.CurrentYawDelta:F1}° (Req: ±{trackMover.turnRotationThreshold}°)", style);
+        }
+
+        style.normal.textColor = IsGameOver ? Color.red : Color.yellow;
+        GUILayout.Label($"Time Remaining: {Mathf.CeilToInt(TimeRemaining)}s", style);
+        
+        style.normal.textColor = Color.green;
+        GUILayout.Label($"Tracks Passed: {PassedTracksCount}", style);
+
+        if (IsGameOver)
+        {
+            style.fontSize = 28;
+            style.normal.textColor = Color.red;
+            GUILayout.Label("TIME UP! GAME OVER", style);
+            
+            style.fontSize = 22;
+            style.normal.textColor = Color.white;
+            GUILayout.Label($"Restarting in: {Mathf.CeilToInt(RestartCountdown)}s", style);
+        }
+
         GUILayout.EndArea();
     }
 }

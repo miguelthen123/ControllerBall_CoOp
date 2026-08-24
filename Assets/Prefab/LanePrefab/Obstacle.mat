@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_InsideOutSky
-  m_Shader: {fileID: 4800000, guid: 7efd848d3d574754e9e7308fb74adc78, type: 3}
+  m_Name: Obstacle
+  m_Shader: {fileID: 4800000, guid: 63d01128b150efc43bcc6c11d8ed32e7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -22,14 +22,16 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 2800000, guid: e31e2fa4fd8bdaa478f1675cf5762fd7, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+    m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _BevelWidth: 0.05
+    - _GrainFrequency: 15
+    - _PlankScale: 2
+    - _Smoothness: 0.4
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _BaseWoodColor: {r: 0.85, g: 0.62, b: 0.41999996, a: 1}
+    - _BevelColor: {r: 0.45, g: 0.27999997, b: 0.17999998, a: 1}
+    - _GrainColor: {r: 0.65, g: 0.41999996, b: 0.25999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -8,10 +8,10 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/EndlessRunner.unity
     guid: 2ea85363af844a745aacd212ba7c2997
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/XRTryOut.unity
     guid: dcba07b152ee44c4f91018b542fab8c7
   m_configObjects:
