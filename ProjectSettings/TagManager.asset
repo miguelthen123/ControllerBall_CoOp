@@ -33,6 +33,7 @@ TagManager:
   - QDSUIToggleThumbnail
   - Obstacle
   - Wire
+  - Target
   layers:
   - Default
   - TransparentFX

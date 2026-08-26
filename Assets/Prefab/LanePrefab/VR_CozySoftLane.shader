@@ -5,7 +5,7 @@ Shader "Custom/VR_CozyTopOnlyTiles"
         _TileColor ("Tile Surface Color", Color) = (0.99, 0.96, 0.91, 1)      // Warm Pastel Cream
         _GroutColor ("Grout / Edge Line Color", Color) = (0.92, 0.81, 0.72, 1)   // Soft Warm Sand
         _SideColor ("Side Wall Color", Color) = (0.94, 0.88, 0.81, 1)          // Soft Matte Beige
-        _TileScale ("World Tile Size", Float) = 1.0
+        _TileScale ("Tile Scale (Tiling Rate)", Float) = 1.0
         _BevelWidth ("Bevel / Edge Width", Range(0.01, 0.2)) = 0.05
         _PillowBulge ("Center Glow / Cushion", Range(0.0, 0.5)) = 0.15
         _TopThreshold ("Top Surface Threshold", Range(0.1, 0.99)) = 0.7
@@ -46,6 +46,7 @@ Shader "Custom/VR_CozyTopOnlyTiles"
             {
                 float4 positionOS   : POSITION;
                 float3 normalOS     : NORMAL;
+                float2 uv           : TEXCOORD0; // <--- ADDED: Mesh UVs
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -54,6 +55,7 @@ Shader "Custom/VR_CozyTopOnlyTiles"
                 float4 positionHCS  : SV_POSITION;
                 float3 worldPos     : TEXCOORD0;
                 float3 worldNormal  : TEXCOORD1;
+                float2 uv           : TEXCOORD2; // <--- ADDED: Passed UVs
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -80,6 +82,7 @@ Shader "Custom/VR_CozyTopOnlyTiles"
                 output.positionHCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.worldPos = TransformObjectToWorld(input.positionOS.xyz);
                 output.worldNormal = TransformObjectToWorldNormal(input.normalOS);
+                output.uv = input.uv; // <--- ADDED: Pass UV to fragment
                 return output;
             }
 
@@ -90,8 +93,8 @@ Shader "Custom/VR_CozyTopOnlyTiles"
 
                 float3 N = normalize(input.worldNormal);
 
-                // 1. Evaluate top tile grid using horizontal world position (X, Z)
-                float2 tileUV = frac(input.worldPos.xz * _TileScale);
+                // 1. Evaluate top tile grid using local mesh UVs instead of world XZ
+                float2 tileUV = frac(input.uv * _TileScale);
                 float2 distFromEdge = min(tileUV, 1.0 - tileUV);
                 float edgeDistance = min(distFromEdge.x, distFromEdge.y);
 
