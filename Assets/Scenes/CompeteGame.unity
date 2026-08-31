@@ -975,7 +975,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &122585105
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1620,6 +1620,7 @@ MonoBehaviour:
   autoShooter: {fileID: 1927779197}
   targetRadius: 0.2
   requiredHoldTime: 3
+  targetSceneName: EndlessRunner
 --- !u!4 &260986937
 Transform:
   m_ObjectHideFlags: 0
@@ -6557,13 +6558,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1078669269}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0.08, z: -0.595}
+  m_LocalRotation: {x: 0.3823192, y: -0.040299077, z: 0.016692424, w: 0.9230003}
+  m_LocalPosition: {x: -0.12, y: -0.9, z: 0.43}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1927779193}
-  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 45, y: -5, z: 0}
 --- !u!1 &1087276421
 GameObject:
   m_ObjectHideFlags: 0
@@ -8716,6 +8717,11 @@ MonoBehaviour:
   hapticFrequency: 1
   hapticAmplitude: 1
   hapticDuration: 0.25
+  followSpeed: 3
+  trailSpacing: 0.4
+  trailScaleMultiplier: 0.7
+  orbitWobbleSpeed: 2
+  orbitWobbleAmount: 0.05
 --- !u!1 &1403292327
 GameObject:
   m_ObjectHideFlags: 0

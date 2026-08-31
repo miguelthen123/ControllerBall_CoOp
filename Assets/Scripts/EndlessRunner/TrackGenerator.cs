@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [System.Serializable]
 public class TrackPrefabWeight
@@ -13,6 +14,8 @@ public class TrackPrefabWeight
 
 public class TrackGenerator : MonoBehaviour
 {
+    public enum GameState { WaitingToStart, Playing, GameOver }
+
     [Header("Track Prefabs Configuration")]
     public GameObject initialTrackPrefab;
     public List<TrackPrefabWeight> weightedTrackPrefabs;
@@ -30,13 +33,17 @@ public class TrackGenerator : MonoBehaviour
     [Header("Game Timer & Restart Settings")]
     [Tooltip("Duration of the game session in seconds.")]
     public float gameDurationSeconds = 60f; 
-    [Tooltip("Delay in seconds before auto-restarting after Game Over.")]
-    public float restartDelaySeconds = 10f;
+    [Tooltip("Timeout in seconds during Game Over before resetting back to main menu state.")]
+    public float autoResetTimeoutSeconds = 10f;
+
+    [Header("Scene Transition Settings")]
+    [Tooltip("Name of the scene to load when pressing B on the Right Controller.")]
+    public string targetSceneName;
 
     [Header("Game Status")]
+    public GameState CurrentState { get; private set; } = GameState.WaitingToStart;
     public float TimeRemaining { get; private set; }
     public int PassedTracksCount { get; private set; }
-    public bool IsGameOver { get; private set; } = false;
     public float RestartCountdown { get; private set; } = 0f;
 
     private List<GameObject> activeTrackSegments = new List<GameObject>();
@@ -46,18 +53,25 @@ public class TrackGenerator : MonoBehaviour
     private VRTrackMover trackMover;
     private int totalSpawnWeight;
     private bool lastSpawnedWasSpecial = false;
-    private Coroutine restartCoroutine;
+    private Coroutine gameOverTimeoutCoroutine;
 
     private void Start()
     {
         trackMover = GetComponent<VRTrackMover>();
         CalculateTotalWeights();
-        InitializeGame();
+        ResetToWaitingState();
     }
 
     private void Update()
     {
-        if (IsGameOver) return;
+        // 1. Check for Scene Switch input (B Button) anytime
+        CheckSceneSwitchInput();
+
+        // 2. Handle state transitions with A Button
+        HandleButtonInputs();
+
+        // 3. Game Loop only runs during Playing state
+        if (CurrentState != GameState.Playing) return;
 
         UpdateGameTimer();
 
@@ -87,27 +101,88 @@ public class TrackGenerator : MonoBehaviour
         }
     }
 
-    private void InitializeGame()
+    private void HandleButtonInputs()
     {
-        // 1. Clear old track game objects if restarting
+        // Button.One targets the 'A' button on the Right Touch Controller in Meta XR SDK
+        if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
+        {
+            if (CurrentState == GameState.WaitingToStart)
+            {
+                StartGame();
+            }
+            else if (CurrentState == GameState.GameOver)
+            {
+                if (gameOverTimeoutCoroutine != null) StopCoroutine(gameOverTimeoutCoroutine);
+                StartGame();
+            }
+        }
+    }
+
+    private void CheckSceneSwitchInput()
+    {
+        // Button.Two targets the 'B' button on the Right Touch Controller in Meta XR SDK
+        if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch))
+        {
+            LoadTargetScene();
+        }
+    }
+
+    private void LoadTargetScene()
+    {
+        if (!string.IsNullOrEmpty(targetSceneName))
+        {
+            SceneManager.LoadScene(targetSceneName);
+        }
+        else
+        {
+            Debug.LogWarning("Target Scene Name is empty! Assign it in the TrackGenerator Inspector.");
+        }
+    }
+
+    private void ResetToWaitingState()
+    {
+        CurrentState = GameState.WaitingToStart;
+        RebuildTrack();
+        
+        TimeRemaining = gameDurationSeconds;
+        PassedTracksCount = 0;
+
+        if (trackMover != null)
+        {
+            trackMover.StopTrack();
+        }
+    }
+
+    private void StartGame()
+    {
+        CurrentState = GameState.Playing;
+        RebuildTrack();
+
+        TimeRemaining = gameDurationSeconds;
+        PassedTracksCount = 0;
+
+        if (trackMover != null)
+        {
+            trackMover.ResumeTrack();
+        }
+    }
+
+    private void RebuildTrack()
+    {
+        // Clear existing segments
         foreach (GameObject segment in activeTrackSegments)
         {
             if (segment != null) Destroy(segment);
         }
 
-        // 2. Reset tracking lists & state values
         activeTrackSegments.Clear();
         passedTrackSegments.Clear();
         openExits.Clear();
-
-        TimeRemaining = gameDurationSeconds;
-        PassedTracksCount = 0;
-        IsGameOver = false;
         lastSpawnedWasSpecial = false;
 
         if (playerTransform == null) return;
 
-        // 3. Spawn Initial Segment
+        // Spawn Initial Segment
         Vector3 spawnOrigin = playerTransform.TransformPoint(initialSpawnOffset);
         GameObject firstSegment = Instantiate(initialTrackPrefab, spawnOrigin, playerTransform.rotation, transform);
         activeTrackSegments.Add(firstSegment);
@@ -124,7 +199,7 @@ public class TrackGenerator : MonoBehaviour
                 openExits.Add(firstSegment.transform);
         }
 
-        // 4. Pre-spawn ahead tracks
+        // Pre-spawn initial set of tracks ahead
         for (int i = 0; i < totalAheadSegments - 1; i++)
         {
             SpawnNextSegment();
@@ -146,7 +221,8 @@ public class TrackGenerator : MonoBehaviour
 
     private void TriggerGameOver()
     {
-        IsGameOver = true;
+        CurrentState = GameState.GameOver;
+
         if (trackMover != null)
         {
             trackMover.StopTrack(); 
@@ -154,13 +230,13 @@ public class TrackGenerator : MonoBehaviour
 
         Debug.Log($"Time Up! Game Over. Total Tracks Passed: {PassedTracksCount}");
 
-        if (restartCoroutine != null) StopCoroutine(restartCoroutine);
-        restartCoroutine = StartCoroutine(RestartRoutine());
+        if (gameOverTimeoutCoroutine != null) StopCoroutine(gameOverTimeoutCoroutine);
+        gameOverTimeoutCoroutine = StartCoroutine(GameOverTimeoutRoutine());
     }
 
-    private IEnumerator RestartRoutine()
+    private IEnumerator GameOverTimeoutRoutine()
     {
-        RestartCountdown = restartDelaySeconds;
+        RestartCountdown = autoResetTimeoutSeconds;
 
         while (RestartCountdown > 0f)
         {
@@ -169,13 +245,9 @@ public class TrackGenerator : MonoBehaviour
         }
 
         RestartCountdown = 0f;
-        InitializeGame();
-
-        // Re-enable track movement if applicable
-        if (trackMover != null)
-        {
-            trackMover.ResumeTrack(); // Adjust to your VRTrackMover start/reset method name if needed
-        }
+        
+        // If user pressed nothing during countdown, revert back to waiting start state
+        ResetToWaitingState();
     }
 
     private void CheckPassedSegments()
@@ -295,7 +367,7 @@ public class TrackGenerator : MonoBehaviour
         style.fontSize = 22;
         style.normal.textColor = Color.cyan;
 
-        GUILayout.BeginArea(new Rect(30, 30, 600, 300));
+        GUILayout.BeginArea(new Rect(30, 30, 600, 350));
         
         if (trackMover != null)
         {
@@ -303,21 +375,35 @@ public class TrackGenerator : MonoBehaviour
             GUILayout.Label($"Wrist Twist: {trackMover.CurrentYawDelta:F1}° (Req: ±{trackMover.turnRotationThreshold}°)", style);
         }
 
-        style.normal.textColor = IsGameOver ? Color.red : Color.yellow;
-        GUILayout.Label($"Time Remaining: {Mathf.CeilToInt(TimeRemaining)}s", style);
-        
-        style.normal.textColor = Color.green;
-        GUILayout.Label($"Tracks Passed: {PassedTracksCount}", style);
-
-        if (IsGameOver)
+        if (CurrentState == GameState.WaitingToStart)
+        {
+            style.fontSize = 26;
+            style.normal.textColor = Color.green;
+            GUILayout.Label("PRESS 'A' TO START GAME", style);
+        }
+        else if (CurrentState == GameState.Playing)
+        {
+            style.normal.textColor = Color.yellow;
+            GUILayout.Label($"Time Remaining: {Mathf.CeilToInt(TimeRemaining)}s", style);
+            
+            style.normal.textColor = Color.green;
+            GUILayout.Label($"Tracks Passed: {PassedTracksCount}", style);
+        }
+        else if (CurrentState == GameState.GameOver)
         {
             style.fontSize = 28;
             style.normal.textColor = Color.red;
             GUILayout.Label("TIME UP! GAME OVER", style);
             
             style.fontSize = 22;
+            style.normal.textColor = Color.yellow;
+            GUILayout.Label($"Final Score: {PassedTracksCount} Tracks", style);
+
+            style.normal.textColor = Color.green;
+            GUILayout.Label("PRESS 'A' TO RESTART", style);
+
             style.normal.textColor = Color.white;
-            GUILayout.Label($"Restarting in: {Mathf.CeilToInt(RestartCountdown)}s", style);
+            GUILayout.Label($"Returning to start in: {Mathf.CeilToInt(RestartCountdown)}s", style);
         }
 
         GUILayout.EndArea();

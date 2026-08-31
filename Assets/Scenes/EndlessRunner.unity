@@ -4604,7 +4604,8 @@ MonoBehaviour:
   spawnTriggerDistance: 2
   cleanupDistanceBehindPlayer: 25
   gameDurationSeconds: 60
-  restartDelaySeconds: 10
+  autoResetTimeoutSeconds: 10
+  targetSceneName: CompeteGame
 --- !u!4 &731045499
 Transform:
   m_ObjectHideFlags: 0

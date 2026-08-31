@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement; // 1. Added for Scene Loading
 
 public class CalibratedGameManager : MonoBehaviour
 {
@@ -18,6 +19,9 @@ public class CalibratedGameManager : MonoBehaviour
     [SerializeField] private float targetRadius = 0.20f;        // 20cm tolerance
     [SerializeField] private float requiredHoldTime = 3.0f;     // 3 seconds dwell
 
+    [Header("Scene Transition Settings")]
+    [SerializeField] private string targetSceneName;           // Name of the scene to load in Inspector
+
     private float currentHoldTimer = 0.0f;
     private bool isCalibrated = false;
 
@@ -36,6 +40,9 @@ public class CalibratedGameManager : MonoBehaviour
 
     private void Update()
     {
+        // 2. Poll for Meta XR B button input
+        CheckSceneSwitchInput();
+
         if (!isCalibrated)
         {
             CheckCalibrationDwell();
@@ -43,6 +50,27 @@ public class CalibratedGameManager : MonoBehaviour
         else
         {
             UpdateGameplayTransforms();
+        }
+    }
+
+    private void CheckSceneSwitchInput()
+    {
+        // Button.Two specifically targets the 'B' button on the Right Touch Controller
+        if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch))
+        {
+            LoadTargetScene();
+        }
+    }
+
+    private void LoadTargetScene()
+    {
+        if (!string.IsNullOrEmpty(targetSceneName))
+        {
+            SceneManager.LoadScene(targetSceneName);
+        }
+        else
+        {
+            Debug.LogWarning("Target Scene Name is empty! Please set it in the Inspector.");
         }
     }
 
