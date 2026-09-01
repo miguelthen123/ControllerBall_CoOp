@@ -19,10 +19,13 @@ public class TargetOnHit : MonoBehaviour
     [SerializeField] private float hapticAmplitude = 0.8f;
     [SerializeField] private float hapticDuration = 0.25f;
 
+    [Header("Laser Damage Settings")]
+    [SerializeField] private float laserHitCooldown = 0.1f; // Minimum time between consecutive laser hits
+
     [Header("Free Floating Trail Physics Settings")]
     [SerializeField] private float followSpeed = 6.0f;           // Speed at which trails catch up
     [SerializeField] private float trailSpacing = 0.35f;         // Distance separation between nodes
-    [SerializeField] private float trailScaleMultiplier = 0.5f;  // Scale factor relative to main sphere (e.g. 0.5 = 50% size of main)
+    [SerializeField] private float trailScaleMultiplier = 0.5f;  // Scale factor relative to main sphere
     [SerializeField] private float orbitWobbleSpeed = 2.0f;      // Floating motion frequency
     [SerializeField] private float orbitWobbleAmount = 0.05f;    // Floating motion intensity
 
@@ -31,6 +34,9 @@ public class TargetOnHit : MonoBehaviour
 
     private List<Transform> trailTransforms = new List<Transform>();
     private Coroutine hapticRoutine;
+    
+    // Per-part cooldown tracking so main sphere and trail spheres register hits independently
+    private Dictionary<TargetColorHandler, float> partLaserHitTimers = new Dictionary<TargetColorHandler, float>();
 
     private void Awake()
     {
@@ -46,7 +52,6 @@ public class TargetOnHit : MonoBehaviour
 
     private void SpawnFloatingTrails()
     {
-        // Get the base world scale of the main target sphere
         Vector3 baseWorldScale = transform.lossyScale;
         Vector3 currentScale = baseWorldScale;
 
@@ -55,17 +60,12 @@ public class TargetOnHit : MonoBehaviour
             GameObject trailObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             trailObj.name = $"{gameObject.name}_FreeTrail_{i}";
 
-            // Keep UNPARENTED so it moves freely in world space
             trailObj.transform.SetParent(null);
-            
-            // Set initial position behind main sphere
             trailObj.transform.position = transform.position - (transform.forward * (trailSpacing * i));
 
-            // Apply size relative to main sphere's world scale
             currentScale *= trailScaleMultiplier;
             trailObj.transform.localScale = currentScale;
 
-            // Copy shared material structure
             MeshRenderer mainRenderer = GetComponent<MeshRenderer>();
             MeshRenderer trailRenderer = trailObj.GetComponent<MeshRenderer>();
             if (trailRenderer != null && mainRenderer != null)
@@ -73,10 +73,7 @@ public class TargetOnHit : MonoBehaviour
                 trailRenderer.sharedMaterial = mainRenderer.sharedMaterial;
             }
 
-            // Setup Collision Proxy & Independent Color Handler (1 Point)
             SetupCollisionAndColor(trailObj, 1);
-
-            // Store transform reference for movement updates
             trailTransforms.Add(trailObj.transform);
         }
     }
@@ -88,17 +85,15 @@ public class TargetOnHit : MonoBehaviour
 
     private void UpdateFreeTrailingPositions()
     {
-        Transform leadTarget = transform; // First trail follows main sphere
+        Transform leadTarget = transform;
 
         for (int i = 0; i < trailTransforms.Count; i++)
         {
             Transform currentTrail = trailTransforms[i];
             if (currentTrail == null) continue;
 
-            // 1. Target position behind the leading object
             Vector3 targetPosition = leadTarget.position - (leadTarget.forward * trailSpacing);
 
-            // 2. Add subtle free-floating wobble/orbit offset
             float timeOffset = Time.time * orbitWobbleSpeed + (i * 1.5f);
             Vector3 wobbleOffset = new Vector3(
                 Mathf.Sin(timeOffset) * orbitWobbleAmount,
@@ -108,18 +103,15 @@ public class TargetOnHit : MonoBehaviour
 
             targetPosition += wobbleOffset;
 
-            // 3. Smoothly interpolate position & rotation
             currentTrail.position = Vector3.Lerp(currentTrail.position, targetPosition, Time.deltaTime * followSpeed);
             currentTrail.rotation = Quaternion.Slerp(currentTrail.rotation, leadTarget.rotation, Time.deltaTime * followSpeed);
 
-            // Shift lead target for next trail element in chain
             leadTarget = currentTrail;
         }
     }
 
     private void SetupCollisionAndColor(GameObject targetObject, int scoreValue)
     {
-        // Setup Collider
         Collider col = targetObject.GetComponent<Collider>();
         if (col == null)
         {
@@ -127,7 +119,6 @@ public class TargetOnHit : MonoBehaviour
         }
         col.isTrigger = true;
 
-        // Setup Independent Color Handler
         TargetColorHandler colorHandler = targetObject.GetComponent<TargetColorHandler>();
         if (colorHandler == null)
         {
@@ -135,35 +126,94 @@ public class TargetOnHit : MonoBehaviour
         }
         colorHandler.Initialize(defaultColor, hitColor, colorFlashDuration);
 
-        // Setup Collision Proxy
         TargetPartProxy proxy = targetObject.GetComponent<TargetPartProxy>();
         if (proxy == null)
         {
             proxy = targetObject.AddComponent<TargetPartProxy>();
         }
         proxy.Initialize(this, colorHandler, scoreValue);
+
+        if (!partLaserHitTimers.ContainsKey(colorHandler))
+        {
+            partLaserHitTimers.Add(colorHandler, 0f);
+        }
     }
 
+    // Handles single-frame impacts (Bullets) & initial Laser entrance
     public void OnPartTriggerEnter(Collider other, TargetColorHandler hitHandler, int points)
     {
-        if (other.CompareTag("Bullet") || other.GetComponent<Bullet>() != null)
+        if (IsBullet(other))
         {
-            // 1. Add score points
-            RegisterHit(points);
-
-            // 2. Flash ONLY the specific sphere that was hit
-            if (hitHandler != null)
-            {
-                hitHandler.FlashColor();
-            }
-
-            // 3. Trigger controller haptics
-            if (hapticRoutine != null) StopCoroutine(hapticRoutine);
-            hapticRoutine = StartCoroutine(TriggerLeftHapticsRoutine());
-
-            // 4. Destroy bullet
+            ProcessHit(hitHandler, points);
             Destroy(other.gameObject);
         }
+        else if (IsLaser(other))
+        {
+            TryProcessLaserHit(hitHandler, points);
+        }
+    }
+
+    // Handles continuous impacts over time (Lasers)
+    public void OnPartTriggerStay(Collider other, TargetColorHandler hitHandler, int points)
+    {
+        if (IsLaser(other))
+        {
+            TryProcessLaserHit(hitHandler, points);
+        }
+    }
+
+    private void TryProcessLaserHit(TargetColorHandler hitHandler, int points)
+    {
+        if (hitHandler == null) return;
+
+        if (!partLaserHitTimers.ContainsKey(hitHandler))
+        {
+            partLaserHitTimers[hitHandler] = 0f;
+        }
+
+        // Check cooldown per target sphere
+        if (Time.time >= partLaserHitTimers[hitHandler] + laserHitCooldown)
+        {
+            partLaserHitTimers[hitHandler] = Time.time;
+            ProcessHit(hitHandler, points);
+        }
+    }
+
+    private void ProcessHit(TargetColorHandler hitHandler, int points)
+    {
+        RegisterHit(points);
+
+        if (hitHandler != null)
+        {
+            hitHandler.FlashColor();
+        }
+
+        if (hapticRoutine != null) StopCoroutine(hapticRoutine);
+        hapticRoutine = StartCoroutine(TriggerLeftHapticsRoutine());
+    }
+
+    private bool IsBullet(Collider col)
+    {
+        if (col == null) return false;
+
+        return col.CompareTag("Bullet") 
+            || col.GetComponent<Bullet>() != null 
+            || col.GetComponentInParent<Bullet>() != null;
+    }
+
+    private bool IsLaser(Collider col)
+    {
+        if (col == null) return false;
+
+        // Thorough hierarchy check (Self, Parent, and Root)
+        string colName = col.name.ToLower();
+        string rootName = col.transform.root.gameObject.name.ToLower();
+
+        return col.CompareTag("Laser") 
+            || col.transform.root.CompareTag("Laser")
+            || colName.Contains("laser") 
+            || rootName.Contains("laser")
+            || col.GetComponentInParent<AutoShooter>() != null;
     }
 
     public void RegisterHit(int points = 1)
@@ -195,7 +245,6 @@ public class TargetOnHit : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Cleanup unparented child objects when target is destroyed
         foreach (Transform tr in trailTransforms)
         {
             if (tr != null) Destroy(tr.gameObject);
@@ -218,7 +267,9 @@ public class TargetColorHandler : MonoBehaviour
     private float flashDuration;
     private Coroutine flashRoutine;
 
+    private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
     private static readonly int MainColorProperty = Shader.PropertyToID("_MainColor");
+    private static readonly int ColorProperty = Shader.PropertyToID("_Color");
 
     public void Initialize(Color defColor, Color hColor, float duration)
     {
@@ -257,12 +308,16 @@ public class TargetColorHandler : MonoBehaviour
     {
         if (meshRenderer == null) return;
         meshRenderer.GetPropertyBlock(propertyBlock);
+
+        propertyBlock.SetColor(BaseColorProperty, color);
         propertyBlock.SetColor(MainColorProperty, color);
+        propertyBlock.SetColor(ColorProperty, color);
+
         meshRenderer.SetPropertyBlock(propertyBlock);
     }
 }
 
-// Helper Proxy class that delegates trigger hits back to the TargetOnHit manager
+// Helper Proxy class that delegates trigger events back to the TargetOnHit manager
 public class TargetPartProxy : MonoBehaviour
 {
     private TargetOnHit mainTarget;
@@ -281,6 +336,14 @@ public class TargetPartProxy : MonoBehaviour
         if (mainTarget != null)
         {
             mainTarget.OnPartTriggerEnter(other, colorHandler, pointValue);
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (mainTarget != null)
+        {
+            mainTarget.OnPartTriggerStay(other, colorHandler, pointValue);
         }
     }
 }
